@@ -1,0 +1,19 @@
+local curtain = {node}
+
+function init(self)
+	curtain.node = gui.get_node("curtain")
+	gui.play_spine_anim(curtain.node, "animation_play", gui.PLAYBACK_ONCE_BACKWARD, { blend_duration = 0.1 }, 
+	function()
+		gui.play_spine_anim(curtain.node, "idle_play", gui.PLAYBACK_ONCE_FORWARD, { blend_duration = 0.1 })
+	end)
+end
+
+function update(self, dt)
+	
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("end") then
+		gui.play_spine_anim(curtain.node, "animation_play", gui.PLAYBACK_ONCE_FORWARD, { blend_duration = 0.1 })
+	end
+end

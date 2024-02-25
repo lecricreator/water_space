@@ -1,0 +1,43 @@
+local myData_game = require("gameplay.datagame")
+
+local box_game_over = {node, enable = false, activate = false, visible_posi = vmath.vector3(630, 350, 0), invisible_posi = vmath.vector3(630, 1000, 0)}
+local bUpdate = {node}
+local bRetry = {node}
+
+function init(self)
+	gui.set_render_order(11)
+	msg.post(".", "acquire_input_focus")
+	myData_game.event = "play"
+	box_game_over.node = gui.get_node("boxGameOver")
+	bUpdate.node = gui.get_node("bUpdate")
+	bRetry.node = gui.get_node("bRetry")
+	box_game_over.enable = false
+	gui.set_enabled(box_game_over.node, box_game_over.enable)
+	gui.set_position(box_game_over.node, box_game_over.invisible_posi)
+end
+
+function update(self, dt)
+if myData_game.event == "game over" and box_game_over.activate == false then
+		gui.animate(box_game_over.node, "position", box_game_over.visible_posi, gui.EASING_OUTBOUNCE, 2)
+		box_game_over.enable = true
+		gui.set_enabled(box_game_over.node, box_game_over.enable)
+		box_game_over.activate = true
+		
+		--gui.set_position(box_game_over.node, box_game_over.visible_posi)
+	end
+end
+
+function on_message(self, message_id, message, sender)
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed then
+		if gui.pick_node(bRetry.node, action.x, action.y) then
+			msg.post("main:/proxy#main", "restart", {scene = myData_game.scene})
+		elseif gui.pick_node(bUpdate.node, action.x, action.y) then
+			msg.post("#update", "apparition")
+			gui.set_enabled(box_game_over.node, false)
+			gui.set_position(box_game_over.node, box_game_over.invisible_posi)
+		end
+	end
+end

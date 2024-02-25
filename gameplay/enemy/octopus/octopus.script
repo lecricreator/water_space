@@ -1,0 +1,15 @@
+function init(self)
+	-- Add initialization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+function on_message(self, message_id, message, sender)
+	if message_id == hash("fire") then
+		spine.play_anim("#octopus", "fire", go.PLAYBACK_LOOP_FORWARD, {})
+	end
+end

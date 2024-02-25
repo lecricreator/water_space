@@ -1,0 +1,146 @@
+local myData_game = require("gameplay.datagame")
+local bg = {position = vmath.vector3(), url = "/bg"}
+local posiShip = {position = vmath.vector3(), acti = false}
+
+-- Returns the angle between two points.
+function math.angle(x1,y1, x2,y2) return math.atan2(y2-y1, x2-x1) end
+
+
+local function create_comete()
+	local comete = {name = "comete"}
+	comete.position = vmath.vector3(math.random(450, 800), 1000, 0)
+	comete.url = factory.create("#comete")
+	myData_game.lstEnemy[#myData_game.lstEnemy + 1] = comete
+	--pprint(myData_game.lstEnemy)
+	go.animate(comete.url, "euler.z", go.PLAYBACK_LOOP_FORWARD, 360, go.EASING_LINEAR, 3)
+end
+
+local function create_octopus()
+	local octopus = {name = "octopus", acti = false}
+	octopus.position = vmath.vector3(math.random(550, 880), 1000, 0)
+	octopus.url = factory.create("#octopus", octopus.position)
+	myData_game.lstEnemy[#myData_game.lstEnemy + 1] = octopus
+	go.animate(octopus.url, "position.y", go.PLAYBACK_ONCE_FORWARD, 560, go.EASING_LINEAR, 1, 2, 
+	function()
+		timer.delay(1, false, function()
+			for n = 1, #myData_game.lstEnemy do
+				local ennemy = myData_game.lstEnemy[n]
+				if ennemy.name == "octopus" then
+					ennemy.position.y = 560
+					msg.post(ennemy.url, "fire")
+					ennemy.acti = true
+				end
+			end
+		end)
+	end)
+end
+
+local function create_coin()
+	local coin = {name = "coin"}
+	coin.position = vmath.vector3(math.random(450, 800), 1000, 0)
+	coin.url = factory.create("#coin")
+	myData_game.lstCoin[#myData_game.lstCoin + 1] = coin
+end
+
+
+local function delete_comete()
+	for n = #myData_game.lstEnemy, 1, -1 do
+		local ennemy = myData_game.lstEnemy[n]
+		if ennemy.name == "comete" then
+			if ennemy.position.y < -100 then
+				go.delete(ennemy.url)
+				table.remove(myData_game.lstEnemy, n)
+			end
+		end
+	end
+end
+
+local function delete_octopus()
+	for n = #myData_game.lstEnemy, 1, -1 do
+		local ennemy = myData_game.lstEnemy[n]
+		if ennemy.name == "octopus" then
+			if ennemy.position.y < -100 then
+				go.delete(ennemy.url)
+				table.remove(myData_game.lstEnemy, n)
+			end
+		end
+	end
+end
+
+local function delete_coin()
+	go.delete(myData_game.lstCoin[1].url)
+	myData_game.lstCoin = {}
+	create_coin()
+end
+
+
+local function move_BG(dt)
+	bg.position.y = bg.position.y - (50 * dt)
+	go.set_position(bg.position, bg.url)
+end
+
+
+function init(self)
+	math.randomseed(os.time())
+	myData_game.lstEnemy = {}
+	myData_game.lstCoin = {}
+	bg.position = go.get_position(bg.url)
+	create_comete()
+	create_octopus()
+	create_coin()
+end
+
+local function move_delete_ennemy(dt)
+	for n = 1, #myData_game.lstEnemy do
+		local ennemy = myData_game.lstEnemy[n]
+		if ennemy.position.y > -100 then
+			if ennemy.name == "comete" or ennemy.name == "coin" then
+				ennemy.position.y = ennemy.position.y - (myData_game.speed * 2 * dt)
+				go.set_position(ennemy.position, ennemy.url)
+			elseif ennemy.name == "octopus" then 
+				if ennemy.acti then
+					--ennemy.position.x = ennemy.position.x * (dt * 10 )
+					ennemy.position.y = ennemy.position.y - (dt * 600 )
+					go.set_position(ennemy.position, ennemy.url)
+				end
+			end
+		else
+			if ennemy.name == "comete" then
+				delete_comete()
+				create_comete()
+			elseif ennemy.name == "octopus" then
+				delete_octopus()
+				create_octopus()
+			end
+		end
+	end
+end
+
+local function move_coin(dt)
+	for n = 1, #myData_game.lstCoin do
+		local coin = myData_game.lstCoin[n]
+		if coin.position.y > -100 then
+			--pprint(coin.position)
+			coin.position.y = coin.position.y - (myData_game.speed * 2 * dt)
+			go.set_position(coin.position, coin.url)
+		else
+			delete_coin()
+		end
+	end
+end
+
+function update(self, dt)
+	if myData_game.event == "play" then
+		move_BG(dt)
+		move_delete_ennemy(dt)
+		move_coin(dt)
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("collision_enemy") then
+		delete_comete()
+	elseif message_id == hash("collision_coin") then
+		delete_coin()
+	end
+end

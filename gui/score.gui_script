@@ -1,0 +1,47 @@
+local myData_game = require("gameplay.datagame")
+
+
+local distance = {node, value = 0}
+local box_node
+
+local function set_distance(d)
+	gui.set_text(d.node, d.value)
+end
+
+local function modify_speed(dt)
+	if distance.value > myData_game.progression[myData_game.step] then
+		--pprint("effect")
+		myData_game.speed = myData_game.speed + (100 * dt)
+		if myData_game.speed >= myData_game.speed_up[myData_game.step] then
+			--print("next")
+			myData_game.step = myData_game.step + 1
+		end
+	end
+end
+
+
+function init(self)
+	myData_game.step = 1
+	myData_game.speed = 100
+	gui.set_render_order(1)
+	box_node = gui.get_node("distance")
+	distance.node = gui.get_node("tDistance")
+	set_distance(distance)
+end
+
+function update(self, dt)
+	if myData_game.event == "play" then
+		modify_speed(dt)
+		distance.value = math.floor(distance.value + (myData_game.speed * dt))
+		set_distance(distance)
+	elseif myData_game.event == "game over" then
+		gui.set_enabled(box_node, false)
+		--gui.set_position(box_node, vmath.vector3(640, 570, 0))
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Learn more: https://defold.com/manuals/message-passing/
+	-- Remove this function if not needed
+end

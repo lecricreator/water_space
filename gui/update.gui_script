@@ -1,0 +1,153 @@
+local myData_game = require("gameplay.datagame")
+
+local structure = {node, position, enable = false}
+local bSpeed  = {node, level = myData_game.update.speed, max = 5, price = 0}
+local bSize   = {node, level = myData_game.update.size , max = 3, price = 0}
+local bBonus  = {node, level = myData_game.update.bonus, max = 3, price = 0}
+local bReturn = {node}
+
+local tCoin  = {node, text = ""}
+
+local texture_green = "full_progress_green"
+
+-----p like progression for red and green
+local pSpeed = 
+{
+	{node, active = false}, 
+	{node, active = false}, 
+	{node, active = false}, 
+	{node, active = false}, 
+	{node, active = false}, 
+	progress = 0
+}
+local pSize = 
+{
+	{node, active = false}, 
+	{node, active = false}, 
+	{node, active = false}, 
+	progress = 0
+}
+local pBonus = 
+{
+	{node, active = false}, 
+	{node, active = false}, 
+	{node, active = false}, 
+	progress = 0
+}
+
+
+
+local function modify_visual(pObject, pProgress)
+	bSpeed.level = myData_game.update.speed.progress
+	bSize.level  = myData_game.update.size.progress
+	bBonus.level = myData_game.update.bonus.progress
+	
+	gui.set_text(tCoin.node , "coin "..myData_game.coin)
+	if pObject == "speed" then
+		gui.play_flipbook(pSpeed[pProgress].node, texture_green)
+	elseif pObject == "size" then
+		gui.play_flipbook(pSize[pProgress].node, texture_green)
+	elseif pObject == "bonus" then
+		gui.play_flipbook(pBonus[pProgress].node, texture_green)
+	end
+	--myData_game.update.speed.progress
+end
+
+
+local function initButton()
+	bSpeed.node  = gui.get_node("price_speed")
+	bSize.node   = gui.get_node("price_size")
+	bBonus.node  = gui.get_node("price_bonus")
+	bReturn.node = gui.get_node("bReturn")
+	
+	bSpeed.level = myData_game.update.speed.progress
+	bSize.level  = myData_game.update.size.progress
+	bBonus.level = myData_game.update.bonus.progress
+	
+	bSpeed.price = myData_game.update.speed.price
+	bSize.price  = myData_game.update.size.price
+	bBonus.price = myData_game.update.bonus.price
+end
+
+local function init_Text()
+	gui.set_render_order(10)
+	tCoin.node  = gui.get_node("tCoin")
+	modify_visual()
+end
+
+local function init_progression()
+	for n = 1, 5 do
+		pSpeed[n].node = gui.get_node("pSpeed"..n)
+		if myData_game.update.speed.progress >= n then
+			gui.play_flipbook(pSpeed[n].node, "full_progress_green")
+		end
+		
+	end
+	for n = 1, 3 do
+		pSize[n].node = gui.get_node("pSize"..n)
+		if myData_game.update.size.progress >= n then
+			gui.play_flipbook(pSize[n].node, "full_progress_green")
+		end
+	end
+	for n = 1, 3 do
+		pBonus[n].node = gui.get_node("pBonus"..n)
+		if myData_game.update.bonus.progress >= n then
+			gui.play_flipbook(pBonus[n].node, "full_progress_green")
+		end
+		
+	end
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	structure.node = gui.get_node("structure")
+	gui.set_enabled(structure.node, structure.enable)
+	initButton()
+	init_Text()
+	init_progression()
+end
+
+function update(self, dt)
+	
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("apparition") then
+		initButton()
+		init_Text()
+		init_progression()
+		structure.enable = true
+		gui.set_enabled(structure.node, structure.enable)
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed then
+		if gui.pick_node(bSpeed.node , action.x, action.y) then
+			if myData_game.coin >= myData_game.update.speed.price then
+				myData_game.coin = myData_game.coin - myData_game.update.speed.price
+				myData_game.update.speed.price    = myData_game.update.speed.price
+				myData_game.update.speed.progress = myData_game.update.speed.progress + 1
+				myData_game.ship.speed = myData_game.ship.speed + 50
+				modify_visual("speed", myData_game.update.speed.progress)
+			end
+		elseif gui.pick_node(bSize.node  , action.x, action.y) then
+			if myData_game.coin >= myData_game.update.size.price then
+				myData_game.ship.size = myData_game.ship.size - .2
+				myData_game.coin = myData_game.coin - myData_game.update.size.price
+				myData_game.update.size.price     = myData_game.update.size.price
+				myData_game.update.size.progress  = myData_game.update.size.progress  + 1
+				modify_visual("size", myData_game.update.size.progress)
+			end
+		elseif gui.pick_node(bBonus.node , action.x, action.y) then
+			if myData_game.coin >= myData_game.update.bonus.price then
+				myData_game.coin = myData_game.coin - myData_game.update.bonus.price
+				myData_game.update.bonus.price    = myData_game.update.bonus.price
+				myData_game.update.bonus.progress = myData_game.update.bonus.progress + 1
+				modify_visual("bonus", myData_game.update.bonus.progress)
+			end
+		elseif gui.pick_node(bReturn.node , action.x, action.y) then
+			msg.post("main:/proxy#main", "restart", {scene = myData_game.scene})
+		end
+	end
+end

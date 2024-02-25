@@ -1,0 +1,27 @@
+[bootstrap]
+main_collection = /main/main.collectionc
+
+[script]
+shared_state = 1
+
+[display]
+width = 1280
+height = 720
+
+[android]
+input_method = HiddenInputField
+
+[project]
+title = Deep in space
+dependencies#0 = https://github.com/defold/extension-spine/archive/refs/tags/2.14.1.zip
+
+[html5]
+show_made_with_defold = 0
+show_console_banner = 0
+show_fullscreen_button = 0
+splash_image = /assets/graph/splash.png
+
+[graphics]
+default_texture_min_filter = nearest
+default_texture_mag_filter = nearest
+

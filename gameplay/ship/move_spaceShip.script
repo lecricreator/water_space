@@ -1,0 +1,104 @@
+local myData_game = require("gameplay.datagame")
+
+local ship = {position = vmath.vector3(640, 100, 0), speed}
+local mouse = {position = vmath.vector3(0, 0, 0), out_screen = {vertical = "", horizontal = ""}}
+local screen = {maxLeft = 450, maxRight = 830, maxUp = 680, maxDown = 20}
+
+-- Returns the angle between two points.
+function math.angle(x1,y1, x2,y2) return math.atan2(y2-y1, x2-x1) end
+
+-- Returns the distance between two points.
+function math.dist(x1,y1, x2,y2) return ((x2-x1)^2+(y2-y1)^2)^0.5 end
+
+local function move_player(dt)
+	if myData_game.event == "play" then
+	local angle = math.angle(ship.position.x, ship.position.y, mouse.position.x, mouse.position.y)
+		local distance = math.dist(ship.position.x, ship.position.y, mouse.position.x, mouse.position.y)
+		local vx = myData_game.ship.speed * 2 * dt * math.cos(angle)
+		local vy = myData_game.ship.speed * 2 * dt * math.sin(angle)
+		if distance > 2 then
+			if ship.position.x <= screen.maxRight and ship.position.x >= screen.maxLeft then
+				if mouse.out_screen.horizontal == "" then
+					ship.position.x = ship.position.x + vx
+					if ship.position.x > screen.maxRight then
+						--pprint("right")
+						ship.position.x = screen.maxRight
+						mouse.out_screen.horizontal = "right"
+					elseif ship.position.x <= screen.maxLeft then
+						--pprint("left")
+						ship.position.x = screen.maxLeft
+						mouse.out_screen.horizontal = "left"
+					end
+				end
+			end
+			if ship.position.y <= screen.maxUp and ship.position.y >= screen.maxDown then
+				if mouse.out_screen.vertical == "" then
+					ship.position.y = ship.position.y + vy
+					if ship.position.y > screen.maxUp then
+						--pprint("up")
+						ship.position.y = screen.maxUp
+						mouse.out_screen.vertical = "up"
+					elseif ship.position.y <= screen.maxDown then
+						--pprint("down")
+						ship.position.y = screen.maxDown
+						mouse.out_screen.vertical = "down"
+					end
+				end
+			end
+			go.set_position(ship.position)
+		end
+	end
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	go.set_scale(vmath.vector3(myData_game.ship.size, myData_game.ship.size, 1))
+	go.set_position(ship.position)
+end
+
+function update(self, dt)
+	if mouse.out_screen.horizontal == "right" then
+		--pprint(mouse.position.x)
+		if mouse.position.x < screen.maxRight then
+			mouse.out_screen.horizontal = ""
+		end
+	end
+	if mouse.out_screen.horizontal == "left" then
+		if mouse.position.x > screen.maxLeft then
+			mouse.out_screen.horizontal = ""
+		end
+	end
+	if mouse.out_screen.vertical == "up" then
+		--pprint(mouse.position.x)
+		if mouse.position.x < screen.maxUp then
+			mouse.out_screen.vertical = ""
+		end
+	end
+	if mouse.out_screen.vertical == "down" then
+		if mouse.position.x > screen.maxDown then
+			mouse.out_screen.vertical = ""
+		end
+	end
+	move_player(dt)
+end
+function on_message(self, message_id, message, sender)
+	if myData_game.event == "play" then
+		if message_id == hash("collision_response") then
+			if message.group == hash("enemy") then
+				go.delete()
+				msg.post("/enemy#move", "collision_enemy")
+				myData_game.event = "game over"
+				msg.post("/curtain#curtain", "end")
+			elseif message.group == hash("coin") then
+				myData_game.coin = myData_game.coin + 10
+				msg.post("/enemy#move", "collision_coin")
+			end
+		elseif message_id == hash("give_position") then
+			msg.post(sender, "give_position", {position = ship.position})
+		end
+	end
+end
+
+function on_input(self, action_id, action)
+	mouse.position = vmath.vector3(action.x, action.y, 0)
+end

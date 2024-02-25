@@ -1,0 +1,71 @@
+local myData_game = require("gameplay.datagame")
+
+local sceneCurrent = nil
+
+
+function changeScene(self, pCurrentScene)
+	if pCurrentScene ~= self.currentScene then
+		if self.currentScene ~= "" then
+			--print("décharge scène précédante")
+			msg.post("/proxy#scene_"..self.currentScene, "unload")
+		end
+		msg.post("/proxy#scene_"..pCurrentScene, "load")
+		--print("apparition pause")
+		msg.post("/proxy#scene_"..pCurrentScene, "set_time_step", {factor = 1, mode = 1})
+		self.currentScene = pCurrentScene
+	end
+end
+
+
+function init(self)
+	sound.play("/proxy#music")
+	--myData_game.system_name = sys.get_sys_info().system_name
+	msg.post(".", "acquire_input_focus")
+	self.currentScene = ""
+	local language = sys.get_sys_info().language
+	changeScene(self, "game")
+	--------------------------------------------title screen
+	--msg.post("@render:", "use_fixed_fit_projection")
+
+end
+
+
+
+function update(self, dt)
+
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("change") then
+		changeScene(self, message.scene)
+	elseif message_id == hash("proxy_loaded") then
+		msg.post(sender, "init")
+		msg.post(sender, "enable")
+	elseif message_id == hash("restart") then
+		myData_game.scene = message.scene
+		sceneCurrent = myData_game.scene
+		--print("current scene "..sceneCurrent)
+		--------------------------------------------------------------------------
+		msg.post("/proxy#scene_"..self.currentScene, "unload")
+		--msg.post("/proxy#scene_Path", "load")
+	elseif message_id == hash("menu") then
+		changeScene(self, "menu")
+		--msg.post("/proxy#scene_Menu", "load")
+	elseif message_id == hash("proxy_unloaded") then
+		if sceneCurrent then
+			print(myData_game.scene.." restart level.")
+			msg.post("/proxy#scene_"..myData_game.scene, "load")
+			sceneCurrent = nil
+		end
+	elseif message_id == hash("unloadPause") then
+		msg.post("/proxy#scene_Pause", "unload")
+		--elseif message_id == hash("pause") then
+		--	--print(myData_game.scene)
+		--	msg.post(myData_game.scene, "set_time_step", {factor = 0, mode = 0})
+
+		--elseif message_id == hash("resume") then
+		--	--print("main resume")
+		--	msg.post(myData_game.scene, "set_time_step", {factor = 1, mode = 1})
+	end
+
+end
